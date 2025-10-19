@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
+import { MockProviders } from '@/components/mock-providers'
 import { Toaster } from '@/components/ui/toaster'
 import { Navigation } from '@/components/navigation'
 
@@ -13,6 +14,9 @@ export const metadata: Metadata = {
   keywords: ['golf', 'indoor golf', 'simulator', 'booking', 'Maison Blanche'],
 }
 
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+const ProviderComponent = isDemoMode ? MockProviders : Providers
+
 export default function RootLayout({
   children,
 }: {
@@ -21,11 +25,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Providers>
+        <ProviderComponent>
           <Navigation />
           {children}
           <Toaster />
-        </Providers>
+        </ProviderComponent>
       </body>
     </html>
   )

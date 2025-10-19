@@ -14,7 +14,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      bays: bays.map(bay => ({
+      bays: bays.map((bay: any) => ({
         id: bay.id,
         name: bay.name,
         type: bay.type,
