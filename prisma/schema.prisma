@@ -1,0 +1,218 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  firstName     String
+  lastName      String
+  phone         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  bookings      Booking[]
+  founderStatus FounderStatus?
+  credits       CreditLedger[]
+  profitShares  ProfitShare[]
+  accessLogs    AccessLog[]
+
+  @@map("users")
+}
+
+model FounderStatus {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isActive        Boolean   @default(true)
+  purchaseDate    DateTime
+  membershipEnd   DateTime
+  discountRate    Float     @default(0.5) // 50% discount
+  profitShareRate Float     @default(0.5) // 50% profit share eligibility
+  totalCredits    Float     @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("founder_status")
+}
+
+model Bay {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  type        BayType
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  slots       Slot[]
+  bookings    Booking[]
+
+  @@map("bays")
+}
+
+model Slot {
+  id          String   @id @default(cuid())
+  bayId       String
+  bay         Bay      @relation(fields: [bayId], references: [id], onDelete: Cascade)
+  startTime   DateTime
+  endTime     DateTime
+  isBooked    Boolean  @default(false)
+  price       Float
+  season      Season
+  timeband    Timeband
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  bookings    Booking[]
+
+  @@unique([bayId, startTime])
+  @@map("slots")
+}
+
+model Booking {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bayId           String
+  bay             Bay         @relation(fields: [bayId], references: [id])
+  slotId          String
+  slot            Slot        @relation(fields: [slotId], references: [id])
+  startTime       DateTime
+  endTime         DateTime
+  price           Float
+  discountApplied Float       @default(0)
+  finalPrice      Float
+  status          BookingStatus @default(CONFIRMED)
+  paymentIntentId String?
+  accessToken     String?     @unique
+  qrCodeData      String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  accessLogs      AccessLog[]
+
+  @@map("bookings")
+}
+
+model PriceRule {
+  id          String   @id @default(cuid())
+  season      Season
+  timeband    Timeband
+  price       Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([season, timeband])
+  @@map("price_rules")
+}
+
+model CreditLedger {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        CreditType
+  amount      Float
+  description String?
+  referenceId String?     // Booking ID or ProfitShare ID
+  createdAt   DateTime    @default(now())
+
+  @@map("credit_ledger")
+}
+
+model ProfitShare {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  year        Int
+  amount      Float
+  isPaid      Boolean  @default(false)
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, year])
+  @@map("profit_shares")
+}
+
+model AccessLog {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookingId   String?
+  booking     Booking?    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  accessToken String
+  action      AccessAction
+  timestamp   DateTime    @default(now())
+  ipAddress   String?
+  userAgent   String?
+
+  @@map("access_logs")
+}
+
+model Season {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("seasons")
+}
+
+model SystemSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+// Enums
+enum BayType {
+  SIMULATOR
+  PUTTING
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum Timeband {
+  PEAK      // 06:00-22:00 Oct-Apr
+  NIGHT     // 22:00-06:00 year-round
+  LOW_SEASON // 12:00-18:00 May-Sep
+}
+
+enum CreditType {
+  PURCHASE
+  REFUND
+  PROFIT_SHARE
+  DISCOUNT
+  PROMOTION
+}
+
+enum AccessAction {
+  ENTER
+  EXIT
+  QR_GENERATED
+}

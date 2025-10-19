@@ -1,0 +1,12 @@
+# Demo Mode - No real environment variables needed
+# This file is just for reference
+
+# For demo deployment, these are not required:
+# NEXT_PUBLIC_SUPABASE_URL=demo
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=demo
+# DATABASE_URL=demo
+# NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=demo
+# STRIPE_SECRET_KEY=demo
+
+# Demo mode works without any external services
+NEXT_PUBLIC_DEMO_MODE=true
